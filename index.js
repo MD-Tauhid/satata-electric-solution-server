@@ -4,13 +4,15 @@ require('dotenv').config()
 const { MongoClient } = require('mongodb');
 const multer = require('multer');
 const path = require('path')
-const app = express();
 const port = process.env.PORT || 5000;
 
 
 // middleware
+const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'))
+
 
 
 // multer storage
@@ -22,8 +24,21 @@ const storage = multer.diskStorage({
         cb(null, file.fieldname + '_' + Date.now() + path.extname(file.originalname));
     }
 })
-const upload = multer({ storage: storage })
-
+const upload = multer({
+    storage: storage,
+    fileFilter: (req, file, cb) => {
+        if (
+            file.mimetype == 'image/jpeg' ||
+            file.mimetype == 'image/jpg' ||
+            file.mimetype == 'image/png'
+        ) {
+            cb(null, true)
+        }
+        else {
+            cb(null, false)
+        }
+    }
+})
 
 
 // Mongodb connection
@@ -42,11 +57,15 @@ async function run() {
             res.send(images);
         })
 
-        app.post('/upload-image', upload.single("file"), (req, res) => {
+        app.post('/upload-image', upload.single("file"), async (req, res) => {
             const data = req.body;
             console.log(data)
+            // const image = {
+            //     image: data.filename
+            // }
+            // const result = await imageCollection.insertOne(image)
+            // res.status(204).send("Successfully added the image")
         })
-
     }
     finally {
 
@@ -56,11 +75,26 @@ run().catch(err => console.error(err))
 
 
 
-
+// default error handler
+app.use((err, req, res, next) => {
+    if (err) {
+        if (err instanceof multer.MulterError) {
+            res.status(500).send("There is an upload error!");
+        }
+        else {
+            res.status(500).send(err.message);
+        }
+    }
+    else {
+        res.send("Success")
+    }
+})
 
 app.get('/', (req, res) => {
     res.send('Satata Electric Solution server is running');
 })
+
+
 
 app.listen(port, () => {
     console.log(`Electric Solution is running on: ${port}`);
