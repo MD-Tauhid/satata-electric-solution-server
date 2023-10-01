@@ -58,13 +58,13 @@ async function run() {
         })
 
         app.post('/upload-image', upload.single("file"), async (req, res) => {
-            const data = req.body;
+            const data = req.file;
             console.log(data)
-            // const image = {
-            //     image: data.filename
-            // }
-            // const result = await imageCollection.insertOne(image)
-            // res.status(204).send("Successfully added the image")
+            const image = {
+                image: data.filename
+            }
+            const result = await imageCollection.insertOne(image)
+            res.send(result);
         })
     }
     finally {
