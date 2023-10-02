@@ -59,7 +59,6 @@ async function run() {
 
         app.post('/upload-image', upload.single("file"), async (req, res) => {
             const data = req.file;
-            console.log(data)
             const image = {
                 image: data.filename
             }
