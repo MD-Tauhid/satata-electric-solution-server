@@ -4,6 +4,7 @@ require('dotenv').config()
 const { MongoClient } = require('mongodb');
 const multer = require('multer');
 const path = require('path')
+var jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000;
 
 
@@ -45,9 +46,33 @@ const upload = multer({
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.ybh5qdc.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri);
 
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'unauthorized access' })
+        }
+        req.decoded = decoded;
+        next();
+    })
+}
+
+
 async function run() {
     try {
         const imageCollection = client.db("satata_electric_solution").collection("images");
+
+        // token verify
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            res.send({ token });
+        });
 
         // get images from database
         app.get('/images', async (req, res) => {
